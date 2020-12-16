@@ -294,10 +294,12 @@ public:
 
                 case Type::Roughness: {
                     Float roughness = bsdf->get_roughness(si);
-                    if (std::isnan(roughness) || std::isinf(roughness) ) {
-                        roughness = 1.f;
-                    }
-                    *avos++ = roughness;
+                    roughness =
+                        enoki::select(enoki::isnan<Float>(roughness) ||
+                                          enoki::isinf<Float>(roughness),
+                                      1.f, roughness);
+           
+                    *aovs++ = roughness;
                 } break;
 
                 case Type::IntegratorRGBA: {

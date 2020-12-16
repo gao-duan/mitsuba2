@@ -456,6 +456,14 @@ public:
                        m_alpha_v->eval_1(si_, active));
     }
 
+    Spectrum get_specular_reflectance(
+        const SurfaceInteraction3f &si_, Mask active) const override {
+        if (m_specular_reflectance)
+            return m_specular_reflectance->eval(si_, active);
+        else
+            return 1.f;
+    }
+
     void traverse(TraversalCallback *callback) override {
         if (!has_flag(m_flags, BSDFFlags::Anisotropic))
             callback->put_object("alpha", m_alpha_u.get());

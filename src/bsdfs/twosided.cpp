@@ -202,6 +202,29 @@ public:
         return result;
     }
 
+    Spectrum get_specular_reflectance(const SurfaceInteraction3f &si_,
+                                     Mask active) const override {
+        SurfaceInteraction3f si(si_);
+
+        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
+             back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
+
+        Spectrum result = 0.f;
+
+        if (any_or<true>(front_side)) {
+            result = m_brdf[0]->get_specular_reflectance(si, front_side);
+        }
+
+        if (any_or<true>(back_side)) {
+            si.wi.z() *= -1.f;
+            masked(result, back_side) =
+                m_brdf[1]->get_specular_reflectance(si, back_side);
+        }
+
+        return result;
+    }
+
+
     Float get_roughness(const SurfaceInteraction3f &si_, int component,
                         Mask active = true) const override {
         if (component < m_brdf[0]->component_count()) {

@@ -183,6 +183,14 @@ public:
             callback->put_object("specular_reflectance", m_specular_reflectance.get());
     }
 
+    Spectrum get_specular_reflectance(
+        const SurfaceInteraction3f &si_, Mask active) const override {
+        if (m_specular_reflectance)
+            return m_specular_reflectance->eval(si_, active);
+        else
+            return 1.f;
+    }
+
     Float get_roughness(const SurfaceInteraction3f &si_, int component,
                         Mask active) const override {
         return 0.f;
