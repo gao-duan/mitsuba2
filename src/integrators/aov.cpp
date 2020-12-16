@@ -1,5 +1,6 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
+#include <mitsuba/render/bsdf.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -65,7 +66,7 @@ template <typename Float, typename Spectrum>
 class AOVIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(SamplingIntegrator)
-    MTS_IMPORT_TYPES(Scene, Sampler, Medium)
+    MTS_IMPORT_TYPES(Scene, Sampler, Medium, BSDF, BSDFPtr)
 
     enum class Type {
         Depth,
@@ -77,6 +78,9 @@ public:
         dPdV,
         dUVdx,
         dUVdy,
+        DiffuseAlbedo,
+        SpecularAlbedo,
+        Roughness,
         IntegratorRGBA
     };
 
@@ -129,7 +133,22 @@ public:
                 m_aov_types.push_back(Type::dUVdy);
                 m_aov_names.push_back(item[0] + ".U");
                 m_aov_names.push_back(item[0] + ".V");
-            } else {
+            } else if (item[1] == "diffuse") {
+                m_aov_types.push_back(Type::DiffuseAlbedo);
+                m_aov_names.push_back(item[0] + ".R");
+                m_aov_names.push_back(item[0] + ".G");
+                m_aov_names.push_back(item[0] + ".B");
+            } else if (item[1] == "specular") {
+                m_aov_types.push_back(Type::SpecularAlbedo);
+                m_aov_names.push_back(item[0] + ".R");
+                m_aov_names.push_back(item[0] + ".G");
+                m_aov_names.push_back(item[0] + ".B");
+            }
+            else if (item[1] == "roughness") {
+                m_aov_types.push_back(Type::Roughness);
+                m_aov_names.push_back(item[0]);
+            }
+            else {
                 Throw("Invalid AOV type \"%s\"!", item[1]);
             }
         }
@@ -167,6 +186,7 @@ public:
         si[!si.is_valid()] = zero<SurfaceInteraction3f>();
         size_t ctr = 0;
 
+        BSDFPtr bsdf = si.bsdf();
         for (size_t i = 0; i < m_aov_types.size(); ++i) {
             switch (m_aov_types[i]) {
                 case Type::Depth:
@@ -217,6 +237,68 @@ public:
                     *aovs++ = si.duv_dy.x();
                     *aovs++ = si.duv_dy.y();
                     break;
+                
+                case Type::DiffuseAlbedo: {
+
+                    Spectrum diffuse_reflectance =
+                        bsdf->get_diffuse_reflectance(si);
+                    UnpolarizedSpectrum res = depolarize(diffuse_reflectance);
+
+                    Color3f rgb;
+                    if constexpr (is_monochromatic_v<Spectrum>) {
+                        rgb = res.x();
+                    } else if constexpr (is_rgb_v<Spectrum>) {
+                        rgb = res;
+                    } else {
+                        static_assert(is_spectral_v<Spectrum>);
+                        /// Note: this assumes that sensor used
+                        /// sample_rgb_spectrum() to generate 'ray.wavelengths'
+                        auto pdf = pdf_rgb_spectrum(ray.wavelengths);
+                        res *= select(neq(pdf, 0.f), rcp(pdf), 0.f);
+                        rgb = xyz_to_srgb(
+                            spectrum_to_xyz(res, ray.wavelengths, active));
+                    }
+
+                    *aovs++ = rgb.r();
+                    *aovs++ = rgb.g();
+                    *aovs++ = rgb.b();
+                    
+                } break;
+
+                case Type::SpecularAlbedo: {
+
+                    Spectrum specular_reflectance =
+                        bsdf->get_specular_reflectance(si);
+                    UnpolarizedSpectrum res = depolarize(specular_reflectance);
+
+                    Color3f rgb;
+                    if constexpr (is_monochromatic_v<Spectrum>) {
+                        rgb = res.x();
+                    } else if constexpr (is_rgb_v<Spectrum>) {
+                        rgb = res;
+                    } else {
+                        static_assert(is_spectral_v<Spectrum>);
+                        /// Note: this assumes that sensor used
+                        /// sample_rgb_spectrum() to generate 'ray.wavelengths'
+                        auto pdf = pdf_rgb_spectrum(ray.wavelengths);
+                        res *= select(neq(pdf, 0.f), rcp(pdf), 0.f);
+                        rgb = xyz_to_srgb(
+                            spectrum_to_xyz(res, ray.wavelengths, active));
+                    }
+
+                    *aovs++ = rgb.r();
+                    *aovs++ = rgb.g();
+                    *aovs++ = rgb.b();
+                   
+                } break;
+
+                case Type::Roughness: {
+                    Float roughness = bsdf->get_roughness(si);
+                    if (std::isnan(roughness) || std::isinf(roughness) ) {
+                        roughness = 1.f;
+                    }
+                    *avos++ = roughness;
+                } break;
 
                 case Type::IntegratorRGBA: {
                         std::pair<Spectrum, Mask> result_sub =

@@ -71,6 +71,11 @@ public:
         return unpolarized<Spectrum>(1.f);
     }
 
+    Float get_roughness(const SurfaceInteraction3f &si_, int component,
+                        Mask active) const override {
+        return 0.f;
+    }
+
     std::string to_string() const override { return "Null[]"; }
 
     MTS_DECLARE_CLASS()

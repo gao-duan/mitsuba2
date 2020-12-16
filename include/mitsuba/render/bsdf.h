@@ -438,6 +438,15 @@ public:
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
 
+    virtual Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si_,
+                                             Mask active=true) const;
+
+    virtual Spectrum get_specular_reflectance(const SurfaceInteraction3f &si_,
+                                              Mask active = true) const;
+
+    virtual Float get_roughness(const SurfaceInteraction3f &si_, int component = 0,
+                        Mask active = true) const;
+
     //! @}
     // -----------------------------------------------------------------------
 
@@ -524,8 +533,11 @@ ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::BSDF)
     ENOKI_CALL_SUPPORT_METHOD(eval)
     ENOKI_CALL_SUPPORT_METHOD(eval_null_transmission)
     ENOKI_CALL_SUPPORT_METHOD(pdf)
+    ENOKI_CALL_SUPPORT_METHOD(get_diffuse_reflectance)
+    ENOKI_CALL_SUPPORT_METHOD(get_specular_reflectance)
+    ENOKI_CALL_SUPPORT_METHOD(get_roughness)
     ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
-
+    
     auto needs_differentials() const {
         return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
     }

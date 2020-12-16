@@ -76,6 +76,10 @@ public:
             }
         }
 
+        if (props.has_property("jittor")) {
+            jittor = props.bool_("jittor");
+        }
+
         if (m_film->size() != ScalarPoint2i(1, 1))
             Throw("This sensor only supports films of size 1x1 Pixels!");
 
@@ -89,7 +93,7 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f & /*position_sample*/,
+                                          const Point2f & position_sample,
                                           const Point2f & /*aperture_sample*/,
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
@@ -101,10 +105,18 @@ public:
             sample_wavelength<Float, Spectrum>(wavelength_sample);
         ray.wavelengths = wavelengths;
 
+       Vector3f d(0.f, 0.f, 1.f);
+        if (jittor) {
+            ScalarFloat size = 1.f / 512.f;
+
+            d = normalize(Vector3f((position_sample.x() - 0.5f) * size,
+                                   (position_sample.y() - 0.5f) * size, 1.0f));
+        }
+
         // 2. Set ray origin and direction
         auto trafo = m_world_transform->eval(time, active);
         ray.o      = trafo.transform_affine(Point3f{ 0.f, 0.f, 0.f });
-        ray.d      = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        ray.d      = trafo.transform_affine(d);
 
         ray.update();
 
@@ -113,8 +125,8 @@ public:
 
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time, Float wavelength_sample,
-                            const Point2f & /*position_sample*/,
-                            const Point2f & /*aperture_sample*/,
+                            const Point2f & position_sample,
+                            const Point2f & aperture_sample,
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         RayDifferential3f ray;
@@ -125,10 +137,18 @@ public:
             sample_wavelength<Float, Spectrum>(wavelength_sample);
         ray.wavelengths = wavelengths;
 
+        Vector3f d(0.f, 0.f, 1.f);
+        if (jittor) {
+            ScalarFloat size = 1.f / 512.f;
+
+            d = normalize(Vector3f((position_sample.x()-0.5f) * size,
+                                   (position_sample.y() - 0.5f) * size, 1.0f));
+        }
+
         // 2. Set ray origin and direction
         auto trafo = m_world_transform->eval(time, active);
         ray.o      = trafo.transform_affine(Point3f{ 0.f, 0.f, 0.f });
-        ray.d      = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        ray.d      = trafo.transform_affine(d);
 
         // 3. Set differentials; since the film size is always 1x1, we don't
         //    have differentials
@@ -154,6 +174,8 @@ public:
     }
 
     MTS_DECLARE_CLASS()
+ private:
+    bool jittor = false;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(RadianceMeter, Sensor)

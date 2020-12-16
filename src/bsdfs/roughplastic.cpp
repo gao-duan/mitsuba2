@@ -353,6 +353,27 @@ public:
         return result;
     }
 
+    Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                     Mask active) const override {
+ 
+        return m_diffuse_reflectance->eval(si, active) *
+               UnpolarizedSpectrum(m_Ftr);
+    }
+
+    Spectrum get_specular_reflectance(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        return m_specular_reflectance->eval(si, active)
+    }
+
+    Float get_roughness(const SurfaceInteraction3f &si_, int component,
+                        Mask active) const override {
+        if (component == 0) {
+            return m_alpha->eval_1(si_, active); // rough specular reflection
+        } else {
+            return std::numeric_limits<Float>::infinity(); // diffuse reflection
+        }
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("alpha", m_alpha);
         callback->put_parameter("eta", m_eta);
@@ -392,6 +413,8 @@ public:
                                                                   slices(external_transmittance));
             m_internal_reflectance =
                 hmean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
+
+            m_Ftr = hmean(external_transmittance * wi.z()) * 2.f;
         }
     }
 
@@ -426,6 +449,7 @@ private:
     bool m_sample_visible;
     DynamicBuffer<Float> m_external_transmittance;
     ScalarFloat m_internal_reflectance;
+    ScalarFloat m_Ftr;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(RoughPlastic, BSDF);

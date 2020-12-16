@@ -183,6 +183,11 @@ public:
             callback->put_object("specular_reflectance", m_specular_reflectance.get());
     }
 
+    Float get_roughness(const SurfaceInteraction3f &si_, int component,
+                        Mask active) const override {
+        return 0.f;
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "ThinDielectric[" << std::endl;

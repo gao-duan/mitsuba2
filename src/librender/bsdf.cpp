@@ -13,6 +13,27 @@ MTS_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null_transmission(
     return 0.f;
 }
 
+MTS_VARIANT Spectrum BSDF<Float, Spectrum>::get_diffuse_reflectance(
+    const SurfaceInteraction3f & si_, Mask active) const {
+    BSDFContext ctx;
+    ctx.type_mask = (uint32_t) BSDFFlags::DiffuseReflection;
+
+    SurfaceInteraction3f si(si_);
+    si.wi = Vector3f(0.f, 0.f, 1.f);
+    return eval(ctx, si, Vector3f(0.f, 0.f, 1.f), active) * math::Pi<Float>;
+}
+
+MTS_VARIANT Spectrum BSDF<Float, Spectrum>::get_specular_reflectance(
+    const SurfaceInteraction3f &si_, Mask active) const {
+    return 0.f;
+}
+
+MTS_VARIANT Float BSDF<Float, Spectrum>::get_roughness(
+    const SurfaceInteraction3f &si_, int component, Mask active) const {
+    NotImplementedError("get_roughness");
+}
+
+
 MTS_VARIANT std::string BSDF<Float, Spectrum>::id() const { return m_id; }
 
 template <typename Index>

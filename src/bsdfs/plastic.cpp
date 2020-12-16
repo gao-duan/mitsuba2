@@ -293,6 +293,26 @@ public:
         return select(active, pdf, 0.f);
     }
 
+    
+    Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                     Mask active) const override {
+        return m_diffuse_reflectance->eval(si, active) * (1.f - m_fdr_ext);
+    }
+
+    Spectrum get_specular_reflectance(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        return m_specular_reflectance->eval(si, active)
+    }
+
+    Float get_roughness(const SurfaceInteraction3f &si_, int component,
+                        Mask active) const override {
+        if (component == 0) {
+            return 0.f; //delta reflection
+        } else {
+            return std::numeric_limits<Float>::infinity(); //diffuse reflection
+        }
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("eta", m_eta);
         callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get());

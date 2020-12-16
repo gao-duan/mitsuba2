@@ -153,6 +153,22 @@ public:
         return select(active, m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active), 0.f);
     }
 
+    Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                     Mask active) const override {
+        return m_nested_bsdf->get_diffuse_reflectance(si, active);
+    }
+
+    Spectrum get_specular_reflectance(const SurfaceInteraction3f &si,
+                                     Mask active) const override {
+        return m_nested_bsdf->get_specular_reflectance(si, active);
+    }
+
+    
+    Float get_roughness(const SurfaceInteraction3f &si_, int component,
+                        Mask active) const override {
+        return m_nested_bsdf->get_roughness(si_, component, active);
+    }
+
     Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {
         // Evaluate texture gradient
         Vector2f grad_uv = m_scale * m_nested_texture->eval_1_grad(si, active);

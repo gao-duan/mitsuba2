@@ -49,6 +49,12 @@ public:
             return m_value;
     }
 
+    Float eval_1(const SurfaceInteraction3f &  it,
+                 Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        return luminance(m_value);
+    }
+
     ScalarFloat mean() const override {
         if constexpr (is_spectral_v<Spectrum>)
             return scalar_cast(hmean(srgb_model_mean(m_value)));

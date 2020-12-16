@@ -163,6 +163,14 @@ public:
         return clamp(m_weight->eval_1(si, active), 0.f, 1.f);
     }
 
+    Float get_roughness(const SurfaceInteraction3f &si_, int component,
+                        Mask active) const override {
+        bool sample_first = component < m_nested_bsdf[0]->component_count();
+        return m_nested_bsdf[sample_first ? 0 : 1]->get_roughness(si_,
+                                                                  component);
+    }
+
+
     void traverse(TraversalCallback *callback) override {
         callback->put_object("weight", m_weight.get());
         callback->put_object("bsdf_0", m_nested_bsdf[0].get());

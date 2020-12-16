@@ -134,6 +134,17 @@ public:
         return select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
     }
 
+    Spectrum get_diffuse_reflectance(const SurfaceInteraction3f& si,
+        Mask active) const override {
+        return m_reflectance->eval(si, active);
+    }
+
+    Float get_roughness(const SurfaceInteraction3f &si_, int component,
+                        Mask active) const override {
+        return std::numeric_limits<Float>::infinity();
+    }
+
+
     void traverse(TraversalCallback *callback) override {
         callback->put_object("reflectance", m_reflectance.get());
     }

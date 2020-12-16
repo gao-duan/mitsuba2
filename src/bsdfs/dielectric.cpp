@@ -325,6 +325,11 @@ public:
         return 0.f;
     }
 
+    Float get_roughness(const SurfaceInteraction3f &si_, int component,
+                        Mask active) const override {
+        return 0.f;
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("eta", m_eta);
         if (m_specular_reflectance)
